@@ -6,7 +6,8 @@
             "type": "string",
             "metadata": {
                 "description": "Azure Logic App Region"
-            }
+            },
+            "defaultValue": "[resourceGroup().location]"
         },
         "logicAppName": {
             "type": "string",
