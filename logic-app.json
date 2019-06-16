@@ -1,0 +1,149 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "app_name": {
+            "type": "string"
+        },
+        "tenant_id": {
+            "type": "string"
+        },
+        "client_id": {
+            "type": "string"
+        },
+        "client_secret": {
+            "type": "string"
+        },
+        "location": {
+            "type": "string"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "name": "[parameters('app_name')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "triggers": {
+                        "Recurrence": {
+                            "recurrence": {
+                                "frequency": "Minute",
+                                "interval": 3
+                            },
+                            "type": "Recurrence"
+                        }
+                    },
+                    "actions": {
+                        "HTTP": {
+                            "runAfter": {},
+                            "type": "Http",
+                            "inputs": {
+                                "authentication": {
+                                    "audience": "https://*.asazure.windows.net",
+                                    "clientId": "[parameters('client_id')]",
+                                    "secret": "[parameters('client_secret')]",
+                                    "tenant": "[parameters('tenant_id')]",
+                                    "type": "ActiveDirectoryOAuth"
+                                },
+                                "body": {
+                                    "CommitMode": "transactional",
+                                    "MaxParallelism": 2,
+                                    "Objects": [],
+                                    "RetryCount": 2,
+                                    "Type": "Full"
+                                },
+                                "headers": {
+                                    "Content-Type": "application/json"
+                                },
+                                "method": "POST",
+                                "uri": "https://northeurope.asazure.windows.net/servers/marczakioaas/models/aas-refresh-model/refreshes"
+                            },
+                            "operationOptions": "DisableAsyncPattern"
+                        },
+                        "Initialize_variable": {
+                            "runAfter": {
+                                "HTTP": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable",
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "refreshStatus",
+                                        "type": "String"
+                                    }
+                                ]
+                            }
+                        },
+                        "Until": {
+                            "actions": {
+                                "Delay": {
+                                    "runAfter": {},
+                                    "type": "Wait",
+                                    "inputs": {
+                                        "interval": {
+                                            "count": 30,
+                                            "unit": "Second"
+                                        }
+                                    }
+                                },
+                                "HTTP_2": {
+                                    "runAfter": {
+                                        "Delay": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Http",
+                                    "inputs": {
+                                        "authentication": {
+                                            "audience": "https://*.asazure.windows.net",
+                                            "clientId": "[parameters('client_id')]",
+                                            "secret": "[parameters('client_secret')]",
+                                            "tenant": "[parameters('tenant_id')]",
+                                            "type": "ActiveDirectoryOAuth"
+                                        },
+                                        "method": "GET",
+                                        "uri": "@{outputs('HTTP')['headers']['location']}"
+                                    }
+                                },
+                                "Set_variable": {
+                                    "runAfter": {
+                                        "HTTP_2": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "SetVariable",
+                                    "inputs": {
+                                        "name": "refreshStatus",
+                                        "value": "@{body('HTTP_2')['status']}"
+                                    }
+                                }
+                            },
+                            "runAfter": {
+                                "Initialize_variable": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "expression": "@or(equals(variables('refreshStatus'), 'succeeded'), equals(variables('refreshStatus'), 'failed'))",
+                            "limit": {
+                                "count": 60,
+                                "timeout": "PT1H"
+                            },
+                            "type": "Until"
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {}
+            }
+        }
+    ]
+}
