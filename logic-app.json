@@ -2,20 +2,35 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "app_name": {
-            "type": "string"
-        },
-        "tenant_id": {
-            "type": "string"
-        },
-        "client_id": {
-            "type": "string"
-        },
-        "client_secret": {
-            "type": "string"
-        },
         "location": {
-            "type": "string"
+            "type": "string",
+            "metadata": {
+                "description": "Azure Logic App Region"
+            }
+        },
+        "logicAppName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of Azure Logic App"
+            }
+        },
+        "tenantId": {
+            "type": "string",
+            "metadata": {
+                "description": "Tenant (Directory) ID"
+            }
+        },
+        "clientId": {
+            "type": "string",
+            "metadata": {
+                "description": "Application (Client) ID"
+            }
+        },
+        "clientSecret": {
+            "type": "string",
+            "metadata": {
+                "description": "Application (Client) Secret"
+            }
         }
     },
     "variables": {},
@@ -23,7 +38,7 @@
         {
             "type": "Microsoft.Logic/workflows",
             "apiVersion": "2017-07-01",
-            "name": "[parameters('app_name')]",
+            "name": "[parameters('logicAppName')]",
             "location": "[parameters('location')]",
             "properties": {
                 "state": "Enabled",
@@ -47,9 +62,9 @@
                             "inputs": {
                                 "authentication": {
                                     "audience": "https://*.asazure.windows.net",
-                                    "clientId": "[parameters('client_id')]",
-                                    "secret": "[parameters('client_secret')]",
-                                    "tenant": "[parameters('tenant_id')]",
+                                    "clientId": "[parameters('clientId')]",
+                                    "secret": "[parameters('clientSecret')]",
+                                    "tenant": "[parameters('tenantId')]",
                                     "type": "ActiveDirectoryOAuth"
                                 },
                                 "body": {
@@ -105,9 +120,9 @@
                                     "inputs": {
                                         "authentication": {
                                             "audience": "https://*.asazure.windows.net",
-                                            "clientId": "[parameters('client_id')]",
-                                            "secret": "[parameters('client_secret')]",
-                                            "tenant": "[parameters('tenant_id')]",
+                                            "clientId": "[parameters('clientId')]",
+                                            "secret": "[parameters('clientSecret')]",
+                                            "tenant": "[parameters('tenantId')]",
                                             "type": "ActiveDirectoryOAuth"
                                         },
                                         "method": "GET",
